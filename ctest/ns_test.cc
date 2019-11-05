@@ -1,5 +1,6 @@
 #include <csignal>
 #include <cstdio>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <unistd.h>
@@ -37,6 +38,15 @@ int main(int argc, char *argv[])
   gethostname(buffer, 1024);
   cout << endl << "curr hostname(before): " << buffer << endl;
 
+  cout << hex;
+  cout << "clone_newuts: " << CLONE_NEWUTS << endl;
+  cout << "clone_newipc: " << CLONE_NEWIPC << endl;
+  cout << "clone_newpid: " << CLONE_NEWPID << endl;
+  cout << "clone_newns: " << CLONE_NEWNS << endl;
+  cout << "clone_newuser: " << CLONE_NEWUSER << endl;
+  cout << "clone_newnet: " << CLONE_NEWNET << endl;
+  cout << "clone_newcgroup: " << CLONE_NEWCGROUP << endl;
+  cout << dec;
   int ret = clone(run, child_stack.get() + kStackSize,
                   CLONE_NEWUTS |
                   CLONE_NEWIPC |
