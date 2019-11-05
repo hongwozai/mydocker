@@ -1,2 +1,4 @@
 G*
 build/*
+*.pyc
+ctest/build
