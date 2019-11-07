@@ -2,13 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-对namespace相关的c接口封装
+相关的c接口封装
 """
 
 import os
 from ctypes import *
 from signal import SIGCHLD
 
+libc = CDLL("libc.so.6")
+
+# =================== clone =======================
 CLONE_NEWNS   = 0x20000
 CLONE_NEWUTS  = 0x4000000
 CLONE_NEWIPC  = 0x8000000
@@ -16,8 +19,6 @@ CLONE_NEWPID  = 0x20000000
 CLONE_NEWUSER = 0x10000000
 CLONE_NEWNET  = 0x40000000
 CLONE_NEWCGROUP = 0x2000000
-
-libc = CDLL("libc.so.6")
 
 class Clone(object):
 
@@ -76,7 +77,8 @@ class Clone(object):
         return self
 
     def wait(self):
-        print(os.waitpid(-1, 0))
+        pid, status = os.waitpid(-1, 0)
+        print("pid: {}, status: {}".format(pid, status))
         return
 
     def childFunc(self):
@@ -91,6 +93,15 @@ class Clone(object):
     def cloneCallBackFunc(pobj):
         clone = cast(pobj, POINTER(py_object)).contents.value
         return clone.childFunc()
+
+# ====================== mount ========================
+MS_RDONLY = 0x1
+MS_NOSUID = 0x2
+MS_NODEV  = 0x4
+MS_NOEXEC = 0x8
+
+def mount(source, target, filesystemtype, mountflags, options=""):
+    return libc.mount(source, target, filesystemtype, mountflags, options)
 
 def main():
 
