@@ -88,9 +88,9 @@ class Container:
         # new_root, put_old不能存在与同一个文件系统中
         # 所以这里要重新绑定一下（虽然实质是在一块硬盘上，一个系统，但重新绑定之后，即可）
         print("[*] mount {} rebind".format(new_root))
-        # mount(new_root, new_root, "bind", MS_BIND | MS_REC)
 
-        # !!!!!!!
+        # !!!!!!! 这句是重点，可以保证pivot_root的成功运行
+        # pivot_root限制new_root与put_old不能是MS_SHARED，来避免传播到其他namespace
         mount("none", "/", "", MS_REC|MS_PRIVATE)
 
         self.pivotRootPath = os.path.join(self.mntPath, ".pivot_root")
@@ -99,12 +99,11 @@ class Container:
         print("[*] pivot_root: new_root: {}, put_old:{}"
               .format(self.mntPath, self.pivotRootPath))
 
-        try:
-            pivot_root(self.mntPath, self.pivotRootPath)
-        except Exception as e:
-            print("fffff: {}".format(e))
+        pivot_root(self.mntPath, self.pivotRootPath)
 
         os.chdir("/")
+
+        # 取消掉.pivot_root
         return
 
     def newSpace(self):
