@@ -39,7 +39,7 @@ class Clone(object):
         self.newIpc = kwargs.get("newIpc", True)
         self.newNs  = kwargs.get("newNs", True)
         self.newPid = kwargs.get("newPid", True)
-        self.newUser = kwargs.get("newUser", True)
+        self.newUser = kwargs.get("newUser", False)
         self.newNet = kwargs.get("newNet", True)
         self.newCgroup = kwargs.get("newCgroup", False)
         return
@@ -99,9 +99,26 @@ MS_RDONLY = 0x1
 MS_NOSUID = 0x2
 MS_NODEV  = 0x4
 MS_NOEXEC = 0x8
+MS_RELATIME = 0x200000
+MS_STRICTATIME = 0x1000000
+MS_BIND = 0x1000
+MS_REC = 0x4000
+MS_PRIVATE = 0x40000
 
 def mount(source, target, filesystemtype, mountflags, options=""):
-    return libc.mount(source, target, filesystemtype, mountflags, options)
+    ret = libc.mount(source, target, filesystemtype, mountflags, options)
+    if ret != 0:
+        libc.perror("[*] mount error: ")
+        raise Exception("mount ret: {}, errmsg: {}".
+                        format(ret, os.strerror(get_errno())))
+    return
+
+def pivot_root(new_root, put_old):
+    ret = libc.pivot_root(new_root, put_old)
+    if ret != 0:
+        libc.perror("[*] pivot_root error:")
+        raise Exception("[*] pivot_root ret: {}, {}".format(ret, os.strerror(get_errno())))
+    return ret
 
 def main():
 

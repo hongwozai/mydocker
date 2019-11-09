@@ -47,11 +47,17 @@ class Subsystem:
     def set(self, conf):
         return
 
+    @abstractmethod
+    def isSet(self):
+        raise Exception("virtual IsSet")
+
     def remove(self):
         os.removedirs(self.getPath())
         return
 
     def apply(self, pid):
+        if not self.isSet():
+            return
         with open(self.getPath() + "/tasks", "w") as f:
             f.write("{}\n".format(pid))
         return
@@ -80,6 +86,7 @@ class MemorySubsystem(Subsystem):
 
     def __init__(self, cgroup_path):
         self.cgroup_path = cgroup_path
+        self.isSet = False
         return
 
     def set(self, conf):
@@ -87,7 +94,11 @@ class MemorySubsystem(Subsystem):
             return
         with open(self.getPath() + "/memory.limit_in_bytes", "w") as f:
             f.write("{}".format(conf.get("memoryLimit")))
+        self.isSet = True
         return
+
+    def isSet(self):
+        return self.isSet
 
     def getPath(self):
         return Subsystem.getPath1(self, "memory", self.cgroup_path)
@@ -96,13 +107,18 @@ def CpuSetSubsystem(Subsystem):
 
     def __init__(self, cgroup_path):
         self.cgroup_path = cgroup_path
+        self.isSet = False
         return
+
+    def isSet(self):
+        return self.isSet
 
     def set(self, conf):
         if "cpuSet" not in conf:
             return
         with open(self.getPath() + "/cpuset.cpus", "w") as f:
             f.write("{}".format(conf.get("cpuSet")))
+        self.isSet = True
         return
 
     def getPath(self):
@@ -112,13 +128,18 @@ def CpuShareSubsystem(Subsystem):
 
     def __init__(self, cgroup_path):
         self.cgroup_path = cgroup_path
+        self.isSet = False
         return
+
+    def isSet(self):
+        return self.isSet
 
     def set(self, conf):
         if "cpuShare" not in conf:
             return
         with open(self.getPath() + "/cpu.shares", "w") as f:
             f.write("{}".format(conf.get("cpuShare")))
+        self.isSet = True
         return
 
     def getPath(self):

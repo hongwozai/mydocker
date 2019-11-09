@@ -2,3 +2,4 @@ G*
 build/*
 *.pyc
 ctest/build
+bin/*

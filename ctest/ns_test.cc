@@ -52,13 +52,14 @@ int main(int argc, char *argv[])
                   CLONE_NEWIPC |
                   CLONE_NEWPID |
                   CLONE_NEWNS  |
-                  CLONE_NEWUSER|
+                  /* CLONE_NEWUSER| */
                   SIGCHLD,
                   0);
   if (ret < 0) {
     perror("clone: ");
     return -1;
   }
+  printf("clone ret: %d\n", ret);
   pid_t pid = waitpid(-1, 0, 0);
   cout << "child finished! "
        << "pid: " << pid << " "

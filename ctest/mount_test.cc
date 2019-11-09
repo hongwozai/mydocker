@@ -30,6 +30,11 @@ int run(void *arg)
   cout << "MS_RDONLY: " << MS_RDONLY << endl;
   cout << "MS_NODEV: " << MS_NODEV << endl;
   cout << "MS_NOSUID: " << MS_NOSUID << endl;
+  cout << "MS_RELATIME: " << MS_RELATIME << endl;
+  cout << "MS_STRICTATIME: " << MS_STRICTATIME << endl;
+  cout << "MS_BIND: " << MS_BIND << endl;
+  cout << "MS_REC: " << MS_REC << endl;
+  cout << "MS_PRIVATE: " << MS_PRIVATE << endl;
   cout << dec;
 
   system("/bin/bash");
