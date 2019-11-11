@@ -7,7 +7,9 @@ import time
 import random
 from libc import Clone, mount
 from libc import MS_NODEV, MS_NOEXEC, MS_NOSUID, MS_STRICTATIME, MS_RELATIME, MS_RELATIME, MS_BIND, MS_REC, MS_PRIVATE
+from libc import MNT_DETACH
 from libc import pivot_root
+from libc import umount
 from cgroups import CGroup
 import shutil
 
@@ -26,15 +28,22 @@ nullfile = open("/dev/null")
 class Container:
 
     def __init__(self, path, image, cmd,
-                 name="", tty=True, conf={}):
+                 name="", tty=True, net="bridge", volume=""):
         self.path = path
         self.image = image
         self.cmd = cmd
         self.name = name
         self.uuid = self.getUUID()
-
+        self.volume = volume
         self.tty = tty
-        self.clone = Clone(Container.childFunc, args=(self,), newUser=False)
+
+        netMod = True
+        if net == "host":
+            netMod = False
+
+        self.clone = Clone(Container.childFunc, args=(self,),
+                           newUser=False,
+                           newNet=netMod)
 
         self.containerPath = os.path.join(self.path, str(self.uuid))
         self.imagePath = os.path.join(self.containerPath,
@@ -46,6 +55,10 @@ class Container:
     def getUUID(self):
         return int(random.uniform(0, 1000))
 
+    # 需要在clone start之后运行
+    def getChildPid(self):
+        return self.clone.childPid
+
     # parent
     def run(self):
         # pipe 其实不去执行/proc/self/exe时，可以不用pipe来传递
@@ -55,6 +68,10 @@ class Container:
 
         # 执行子进程
         self.clone.start()
+
+        if self.clone.childPid == -1:
+            print("[!!!] child start failed")
+            return
 
         # parent close read
         self.readpipe.close()
@@ -66,7 +83,8 @@ class Container:
 
     # parent
     def wait(self):
-        self.clone.wait()
+        if not self.clone.wait():
+            return
 
         # 正常退出
         print("[*] delete space...")
@@ -104,6 +122,8 @@ class Container:
         os.chdir("/")
 
         # 取消掉.pivot_root
+        ret = umount("/.pivot_root", MNT_DETACH)
+        print("[*] umount /.pivot_root ret: {}".format(self.pivotRootPath, ret))
         return
 
     def newSpace(self):
@@ -133,6 +153,18 @@ class Container:
             print("[!!!] ERROR mount aufs failed ")
             raise Exception("mount aufs failed")
 
+        # volume 同样使用aufs方式挂载
+        v = self.volume.split(":")
+        if v[1].startswith("/"):
+            v[1] = v[1].lstrip("/")
+        mntdir = os.path.join(self.mntPath, v[1])
+        os.mkdir(mntdir)
+        status = os.system("mount -t aufs -o dirs={} none {}".
+                           format(v[0], mntdir))
+        print("[*] status: {}, mount {} to {}".format(status, v[0], mntdir))
+        self.volumeMntPath = mntdir
+
+        # pivot_root
         self.pivotRoot(self.mntPath)
 
         # mount /proc /dev /sys
@@ -143,6 +175,9 @@ class Container:
         return
 
     def deleteSpace(self):
+        status = os.system("umount {}".format(self.volumeMntPath))
+        print("[*] umount(ret {}) {}".format(status, self.volumeMntPath))
+
         status = os.system("umount {}".format(self.mntPath))
         print("[*] umount(ret {}) {}".format(status, self.mntPath))
 
@@ -183,7 +218,12 @@ class Container:
         return
 
 def main():
-    container = Container(path="../bin/",image="../images/busybox.tar",cmd="/bin/sh", tty=True)
+    container = Container(path="../bin/",
+                          image="../images/busybox.tar",
+                          cmd="/bin/sh",
+                          tty=True,
+                          net="bridge",
+                          volume="/home/zeya/volume:/root/home")
     container.run()
     container.wait()
     return

@@ -77,9 +77,12 @@ class Clone(object):
         return self
 
     def wait(self):
+        if self.childPid == -1:
+            print("[*] wait nothing");
+            return False
         pid, status = os.waitpid(-1, 0)
         print("pid: {}, status: {}".format(pid, status))
-        return
+        return True
 
     def childFunc(self):
         try:
@@ -112,6 +115,16 @@ def mount(source, target, filesystemtype, mountflags, options=""):
         raise Exception("mount ret: {}, errmsg: {}".
                         format(ret, os.strerror(get_errno())))
     return
+
+MNT_DETACH = 0x2
+
+def umount(target, flags=None):
+    ret = 0
+    if flags is None:
+        ret = libc.umount(target)
+    else:
+        ret = libc.umount2(target, flags)
+    return ret
 
 def pivot_root(new_root, put_old):
     ret = libc.pivot_root(new_root, put_old)
