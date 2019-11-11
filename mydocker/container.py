@@ -50,6 +50,13 @@ class Container:
                                       os.path.basename(self.image).replace(".tar", ""))
         self.writeLayerPath = os.path.join(self.containerPath, "writeLayer")
         self.mntPath = os.path.join(self.containerPath, "mnt")
+
+        v = self.volume.split(":")
+        if v[1].startswith("/"):
+            v[1] = v[1].lstrip("/")
+        self.originVolumePath = v[0]
+        self.volumeMntPath = os.path.join(self.mntPath, v[1])
+
         return
 
     def getUUID(self):
@@ -154,15 +161,10 @@ class Container:
             raise Exception("mount aufs failed")
 
         # volume 同样使用aufs方式挂载
-        v = self.volume.split(":")
-        if v[1].startswith("/"):
-            v[1] = v[1].lstrip("/")
-        mntdir = os.path.join(self.mntPath, v[1])
-        os.mkdir(mntdir)
+        os.mkdir(self.volumeMntPath)
         status = os.system("mount -t aufs -o dirs={} none {}".
-                           format(v[0], mntdir))
-        print("[*] status: {}, mount {} to {}".format(status, v[0], mntdir))
-        self.volumeMntPath = mntdir
+                           format(self.originVolumePath, self.volumeMntPath))
+        print("[*] status: {}, mount {} to {}".format(status, self.originVolumePath, self.volumeMntPath))
 
         # pivot_root
         self.pivotRoot(self.mntPath)
@@ -187,6 +189,7 @@ class Container:
             pass
         except Exception as e:
             print("[*] rm {}".format(e))
+        print("[*] rm {}".format(self.containerPath))
         return
 
     # child
@@ -223,7 +226,7 @@ def main():
                           cmd="/bin/sh",
                           tty=True,
                           net="bridge",
-                          volume="/home/zeya/volume:/root/home")
+                          volume="../volume:/root/home")
     container.run()
     container.wait()
     return
